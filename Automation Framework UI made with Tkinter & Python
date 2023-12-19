@@ -1,0 +1,430 @@
+import datetime
+import json
+import os
+import tkinter as tk
+from tkinter import *
+from tkinter.messagebox import showinfo
+import sendEmail
+from re import search
+import datetime
+
+
+# root window
+root = tk.Tk()
+
+#Make interactable
+root.grab_release()
+
+#Set Icon
+icon = PhotoImage(file='icon.png')
+root.iconphoto(False, icon)
+
+
+root.geometry('750x550')
+root.resizable(False, False)
+root.title('Profit Errosian Automated')
+
+Color0 = '#0072B5'
+Color1 = '#CD212A'
+Color2 = '#00A170'
+Color3 = '#D2386C'
+Color4 = '#926AA6'
+
+def SelectSite():
+   Report = open("Site.txt", "w")
+   Report.close()
+
+   SiteSelected = Site.get()
+   SiteSelectedFile = open("Site.txt", "a")
+   SiteSelectedFile.write(SiteSelected)
+   SiteSelectedFile.close()
+
+def GetSiteLink():
+   # Getting Data from Json
+   dir_path = os.path.dirname(os.path.realpath(__file__))
+   f = open(dir_path + '/' + 'tm.json')
+   data = json.load(f)
+   # Selected Site
+   Site = open("Site.txt", "r")
+   GetSiteLink = Site.read()
+   Site.close()
+   return data['Magento'][GetSiteLink]['URL']
+
+def toPDF():
+   from fpdf import FPDF
+
+   pdf = FPDF()
+
+   pdf.add_page()
+
+   pdf.set_font("Arial", size=7)
+
+   f = open("Report.txt", "r")
+
+   for x in f:
+      pdf.cell(200, 10, txt=x, ln=1, align='C')
+
+   today = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+   ReportName = "Report_" + today + ".pdf"
+
+   pdf.output("Reports/" + ReportName)
+   os.system("start Reports/" + ReportName)
+
+
+
+def PlaceOnlyOrders():
+   def EmailReport():
+      readReport = open("Report.txt", "r")
+      ReportDetails = readReport.read()
+      sendEmail.SendReport(ReportDetails)
+   print(OrdersQuantity.get() + " Orders will be Crated for Category " + SelectedOrderType.get())
+
+   # Make Report File Empty
+   Report = open("Report.txt", "w")
+   Report.close()
+   #Add link to report
+   Report = open("Report.txt", "a")
+   Report.write(GetSiteLink() + "\n\n")
+   Report.close()
+   Report = open("SelectedOrderTypeFile.txt", "w")
+   Report.close()
+
+   # update File
+   OrderTypeSelected = SelectedOrderType.get()
+   SelectedOrderTypeFile = open("SelectedOrderTypeFile.txt", "a")
+   SelectedOrderTypeFile.write(OrderTypeSelected)
+   SelectedOrderTypeFile.close()
+
+   SelectSite()
+
+   HowMuch = OrdersQuantity.get()
+
+   os.system('pytest CreateOrdersOnly.py -n ' + HowMuch)
+
+   EmailReport()
+   toPDF()
+   showinfo("Status", "Script Execution Ended")
+   root.mainloop()
+
+def RefundOneOption():
+   # Email Report Function
+   def EmailReport():
+      readReport = open("Report.txt", "r")
+      ReportDetails = readReport.read()
+      sendEmail.SendReport(ReportDetails)
+
+   # Make Report File Empty
+   Report = open("Report.txt", "w")
+   Report.close()
+   # Add link to report
+   Report = open("Report.txt", "a")
+   Report.write(GetSiteLink() + "\n\n")
+   Report.close()
+   Report = open("SelectedOrderTypeFile.txt", "w")
+   Report.close()
+   Report = open("ReasonTypeFile.txt", "w")
+   Report.close()
+
+   SelectSite()
+
+   #update File
+   RefundOneOptionSelected = SelectedRefundType.get()
+   ReasonTypeFile = open("ReasonTypeFile.txt", "a")
+   ReasonTypeFile.write(RefundOneOptionSelected)
+   ReasonTypeFile.close()
+   # update File
+   OrderTypeSelected = SelectedOrderType.get()
+   SelectedOrderTypeFile = open("SelectedOrderTypeFile.txt", "a")
+   SelectedOrderTypeFile.write(OrderTypeSelected)
+   SelectedOrderTypeFile.close()
+
+   print("Refund/Replace Option: " + RefundOneOptionSelected)
+   print("Order Type: " + OrderTypeSelected)
+
+   if search("2", RefundOneOptionSelected):
+
+      UpdatedOption = RefundOneOptionSelected[1:]
+      ReasonTypeFile = open("ReasonTypeFile.txt", "w")
+      ReasonTypeFile.write(UpdatedOption)
+      ReasonTypeFile.close()
+
+      os.system('pytest ./ReplaceOneOptionScript.py -n ' + OrdersQuantity.get())
+
+   else:
+      os.system('pytest ./RefundOneOptionScript.py -n ' + OrdersQuantity.get())
+
+   EmailReport()
+   toPDF()
+   showinfo("Status", "Script Execution Ended")
+   root.mainloop()
+
+def AutoRefund():
+   # Email Report Function
+
+   def EmailReport():
+      readReport = open("Report.txt", "r")
+      ReportDetails = readReport.read()
+      sendEmail.SendReport(ReportDetails)
+
+   # Make Report File Empty
+   Report = open("Report.txt", "w")
+   Report.close()
+   # Add link to report
+   Report = open("Report.txt", "a")
+   Report.write(GetSiteLink() + "\n\n")
+   Report.close()
+   Report = open("OrderIdsList.txt", "w")
+   Report.close()
+   Report = open("SelectedOrderTypeFile.txt", "w")
+   Report.close()
+   Report = open("ReasonTypeFile.txt", "w")
+   Report.close()
+   Report = open("ReasonTypeFile.txt", "a")
+
+   SelectSite()
+
+   # Getting Inputs from jJson
+   dir_path = os.path.dirname(os.path.realpath(__file__))
+   f = open(dir_path + '/' + 'Refund.json')
+   actions = json.load(f)
+
+   count = 0
+   for i in actions['RefundOptions']:
+      step = actions['RefundOptions'][i]
+      count = count+1
+      Report.write(step + "\n")
+   Report.close()
+
+   # update File
+   OrderTypeSelected = SelectedOrderType.get()
+   SelectedOrderTypeFile = open("SelectedOrderTypeFile.txt", "a")
+   SelectedOrderTypeFile.write(OrderTypeSelected)
+   SelectedOrderTypeFile.close()
+
+   print("Order Type: " + OrderTypeSelected)
+
+
+   #Parallel Execution
+
+   #Dividing number of orders into pairs
+   num, div = count, 4
+   OrderPair = [num // div + (1 if x < num % div else 0) for x in range(div)]
+
+   os.system('pytest ./AutoRefund.py -n ' + str(OrderPair[0]))
+   os.system('pytest ./AutoRefund.py -n ' + str(OrderPair[1]))
+   os.system('pytest ./AutoRefund.py -n ' + str(OrderPair[2]))
+   os.system('pytest ./AutoRefund.py -n ' + str(OrderPair[3]))
+
+   EmailReport()
+   toPDF()
+   showinfo("Status", "Script Execution Ended")
+   root.mainloop()
+
+def AutoReplace():
+   # Email Report Function
+   def EmailReport():
+      readReport = open("Report.txt", "r")
+      ReportDetails = readReport.read()
+      sendEmail.SendReport(ReportDetails)
+
+   # Make Report File Empty
+   Report = open("Report.txt", "w")
+   Report.close()
+   # Add link to report
+   Report = open("Report.txt", "a")
+   Report.write(GetSiteLink() + "\n\n")
+   Report.close()
+   Report = open("OrderIdsList.txt", "w")
+   Report.close()
+   Report = open("SelectedOrderTypeFile.txt", "w")
+   Report.close()
+   Report = open("ReasonTypeFile.txt", "w")
+   Report.close()
+   Report = open("ReasonTypeFile.txt", "a")
+
+   SelectSite()
+
+   # Getting Inputs from jJson
+   dir_path = os.path.dirname(os.path.realpath(__file__))
+   f = open(dir_path + '/' + 'Replace.json')
+   actions = json.load(f)
+
+   count = 0
+   for i in actions['ReplaceOptions']:
+      step = actions['ReplaceOptions'][i]
+      count = count+1
+      Report.write(step + "\n")
+   Report.close()
+
+   # update File
+   OrderTypeSelected = SelectedOrderType.get()
+   SelectedOrderTypeFile = open("SelectedOrderTypeFile.txt", "a")
+   SelectedOrderTypeFile.write(OrderTypeSelected)
+   SelectedOrderTypeFile.close()
+
+   print("Order Type: " + OrderTypeSelected)
+
+
+   #Parallel Execution
+
+   #Dividing number of orders into pairs
+   num, div = count, 4
+   OrderPair = [num // div + (1 if x < num % div else 0) for x in range(div)]
+
+   os.system('pytest ./AutoReplace.py -n ' + str(OrderPair[0]))
+   os.system('pytest ./AutoReplace.py -n ' + str(OrderPair[1]))
+   os.system('pytest ./AutoReplace.py -n ' + str(OrderPair[2]))
+   os.system('pytest ./AutoReplace.py -n ' + str(OrderPair[3]))
+
+   EmailReport()
+   toPDF()
+   showinfo("Status", "Script Execution Ended")
+   root.mainloop()
+
+def ReplaceOnly():
+   print("")
+
+def SetSKU():
+
+   def SetKerbside():
+      sku = SkuInput.get()
+
+      #Validate
+      if not sku.isdigit():
+         showinfo('Invalid Entry', 'Invalid SKU')
+      else:
+         file = open("KerbsideIds.txt", "a")
+         file.write(sku + '\n')
+         file.close()
+   def SetDHL():
+      sku = SkuInput.get()
+
+      # Validate
+      if not sku.isdigit():
+         showinfo('Invalid Entry', 'Invalid SKU')
+      else:
+         file = open("DhlIds.txt", "a")
+         file.write(sku + '\n')
+         file.close()
+   def SetDPD():
+      sku = SkuInput.get()
+
+      # Validate
+      if not sku.isdigit():
+         showinfo('Invalid Entry', 'Invalid SKU')
+      else:
+         file = open("DpdIds.txt", "a")
+         file.write(sku + '\n')
+         file.close()
+
+   newWindow = tk.Toplevel(root)
+   newWindow.grab_set()
+
+   # Set Icon
+   icon = PhotoImage(file='icon.png')
+   newWindow.iconphoto(False, icon)
+
+   newWindow.resizable(False, False)
+   newWindow.title('Set SKUS for Products')
+
+   SkuInput = tk.StringVar()
+   tk.Entry(newWindow, textvariable=SkuInput, font=('calibre', 10, 'normal')).grid(row=0, column=1, pady=20, ipady=20, ipadx=50, padx=100)
+
+   tk.Button(newWindow, text="Set for Kerbside", bg='#00539C', fg='white', command=SetKerbside).grid(row=1, column=0, ipady=10, ipadx=50)
+   tk.Button(newWindow, text="Set for DHL", bg='#00539C', fg='white', command=SetDHL).grid(row=1, column=1, ipady=10, ipadx=50)
+   tk.Button(newWindow, text="Set for DPD", bg='#00539C', fg='white', command=SetDPD).grid(row=1, column=2, ipady=10, ipadx=50)
+
+
+
+# label
+label = tk.Label(text="Select Order Type", bg='#F5DF4D', fg='black', font='20', width='20')
+label.grid(row = 0, column = 0, ipady = 5)
+
+# radio buttons
+SelectedOrderType = tk.StringVar(value='1')
+tk.Radiobutton(root, text='Kerbside/Pallex', value='1', variable=SelectedOrderType, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 1, column = 0, padx = 2)
+tk.Radiobutton(root, text='DHL', value='2', variable=SelectedOrderType, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 2, column = 0, pady = 2)
+tk.Radiobutton(root, text='DPD', value='3', variable=SelectedOrderType, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20, state='disabled').grid(row = 3, column = 0, pady = 2)
+
+
+#Select Site
+label = tk.Label(text="Select Site", bg='#F5DF4D', fg='black', font='20', width='20').grid(row = 5, column = 0, ipady = 2)
+Site = tk.StringVar(value='automation.bm')
+tk.Radiobutton(root, text='automation.bm', value='automation.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 6, column = 0, pady = 2)
+tk.Radiobutton(root, text='devadmin.bm', value='devadmin.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 7, column = 0, pady = 2)
+tk.Radiobutton(root, text='devadmin2.bm', value='devadmin2.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 8, column = 0, pady = 2)
+tk.Radiobutton(root, text='devadmin3.bm', value='devadmin3.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 9, column = 0, pady = 2)
+tk.Radiobutton(root, text='devadmin4.bm', value='devadmin4.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 10, column = 0, pady = 2)
+tk.Radiobutton(root, text='devadmin5.bm', value='devadmin5.bm', variable=Site, bg=Color0, fg='white', selectcolor=Color0, activebackground='yellow', width=20).grid(row = 11, column = 0, pady = 2)
+
+
+
+# label
+label = tk.Label(text="How Many Orders?", bg='#F5DF4D', fg='black',font='20',  width='20')
+label.grid(row = 0, column = 1, ipady=5)
+
+# radio buttons
+OrdersQuantity = tk.StringVar(value='1')
+
+for i in range(1,13):
+   tk.Radiobutton(root, text=i, value=i, variable=OrdersQuantity, bg=Color2, fg='white', selectcolor=Color2, activebackground='yellow', font=5, width=10).grid(row = i, column = 1, pady = 0)
+
+
+
+#Refund
+label = tk.Label(text="Select Refund Option", bg='#F5DF4D', fg='black',font='20',  width='20')
+label.grid(row = 0, column = 2, ipady = 5)
+
+# radio buttons
+SelectedRefundType = tk.StringVar(value='ShipmentLost-NoClaim')
+tk.Radiobutton(root, text='Shipment Lost', value='ShipmentLost-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 1, column = 2, padx = 2)
+tk.Radiobutton(root, text='Damaged', value='Damaged-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 2, column = 2, pady = 2)
+tk.Radiobutton(root, text='Quality', value='Quality-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 3, column = 2, pady = 2)
+tk.Radiobutton(root, text='Out Of Stock', value='OutOfStock-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 4, column = 2, pady = 2)
+tk.Radiobutton(root, text='Order Swap', value='OrderSwap-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 5, column = 2, pady = 2)
+tk.Radiobutton(root, text='GoodWill', value='GoodWill-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 6, column = 2, pady = 2)
+tk.Radiobutton(root, text='Returned Goods', value='ReturnedGoods-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 7, column = 2, pady = 2)
+tk.Radiobutton(root, text='Customer Error', value='CustomerError-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 8, column = 2, pady = 2)
+tk.Radiobutton(root, text='Office Error', value='OfficeError-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 9, column = 2, pady = 2)
+tk.Radiobutton(root, text='Warranty', value='Warranty-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 10, column = 2, pady = 2)
+tk.Radiobutton(root, text='System Error', value='SystemError-NoClaim', variable=SelectedRefundType, bg=Color3, fg='white', selectcolor=Color3, activebackground='yellow', width=20).grid(row = 11, column = 2, pady = 2)
+
+
+#Replace
+label = tk.Label(text="Select Replace Option", bg='#F5DF4D', fg='black', font='20', width='20')
+label.grid(row = 0, column = 3, ipady = 5)
+
+# radio buttons
+SelectedReplaceType = tk.StringVar(value='2ShipmentLost-NoClaim')
+tk.Radiobutton(root, text='ShipmentLost', value='2ShipmentLost-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 1, column = 3, padx = 2)
+tk.Radiobutton(root, text='Damaged', value='2Damaged-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 2, column = 3, pady = 2)
+tk.Radiobutton(root, text='Quality', value='2Quality-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 3, column = 3, pady = 2)
+tk.Radiobutton(root, text='GoodWill', value='2GoodWill-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 4, column = 3, pady = 2)
+tk.Radiobutton(root, text='OfficeError', value='2OfficeError-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 5, column = 3, pady = 2)
+tk.Radiobutton(root, text='Warranty', value='2Warranty-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 6, column = 3, pady = 2)
+tk.Radiobutton(root, text='SystemError', value='2SystemError-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 7, column = 3, pady = 2)
+tk.Radiobutton(root, text='Spare', value='2Spare-NoClaim', variable=SelectedRefundType, bg=Color4, fg='white', selectcolor=Color4, activebackground='yellow', width=20).grid(row = 8, column = 3, pady = 2)
+
+
+#Just Orders
+button0 = tk.Button(root, text="Only Orders", bg=Color1, fg='white', width=15, command=PlaceOnlyOrders)
+button0.grid(row = 13, column = 1, pady='10', ipady = 10)
+
+# Auto Refund Button
+button1 = tk.Button(root, text="Auto Refund", bg=Color1, fg='white', command=AutoRefund)
+button1.grid(row = 14, column = 0, pady='10', ipady = 10)
+
+# Auto Replace Button
+button2 = tk.Button(root, text="Auto Replace", bg=Color1, fg='white', command=AutoReplace)
+button2.grid(row = 14, column = 1, pady='10', ipady = 10)
+
+# button
+button3 = tk.Button(root, text="Set SKUs", bg='#00539C', fg='white', command=SetSKU)
+button3.grid(row = 14, column = 2, columnspan=3, pady='10', ipady = 10, ipadx=100)
+
+
+#Refund One Option
+button4 = tk.Button(root, text="Refund/Replace Selected Option", bg=Color1, fg='white', width=40, command=RefundOneOption)
+button4.grid(row = 13, column = 2, columnspan=4, pady='10', ipady = 10, ipadx=15)
+
+root.mainloop()
