@@ -42,8 +42,8 @@ Contributions to enhance the framework's functionalities, optimize performance, 
 🌟 Connect with me:
 
 LinkedIn: https://www.linkedin.com/in/salmanbabuzai
-Twitter: @salmanbabuzai
-Instagram: @salmanbabuzai
-Facebook: @salmanbabuzai
+- Twitter: @salmanbabuzai
+- Instagram: @salmanbabuzai
+- Facebook: @salmanbabuzai
 
 I'm dedicated to creating robust solutions and exploring new horizons in the tech landscape. Feel free to connect on LinkedIn to discuss collaboration opportunities, tech trends, or simply to say hello!
