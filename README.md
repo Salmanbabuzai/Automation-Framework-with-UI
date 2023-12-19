@@ -36,3 +36,14 @@ This Python-based Automation Framework built with Selenium and Tkinter provides 
 
 Contributions to enhance the framework's functionalities, optimize performance, and expand site support are welcomed through pull requests. Before making significant changes, please discuss them via issues to ensure alignment with project goals and strategies.
 
+## About Me
+👋 Hey there! I'm Salman, and I'm passionate about leveraging technology to drive innovation. You can find me across various social media platforms under the username @salmanbabuzai.
+
+🌟 Connect with me:
+
+LinkedIn: https://www.linkedin.com/in/salmanbabuzai
+Twitter: @salmanbabuzai
+Instagram: @salmanbabuzai
+Facebook: @salmanbabuzai
+
+I'm dedicated to creating robust solutions and exploring new horizons in the tech landscape. Feel free to connect on LinkedIn to discuss collaboration opportunities, tech trends, or simply to say hello!
